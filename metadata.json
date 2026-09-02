@@ -1,0 +1,8 @@
+{
+  "name": "IELTS Reading: The Dover Bronze-Age Boat",
+  "description": "Interactive IELTS Reading practice, 20-minute test simulation, flowchart completion, T/F/NG, short-answer questions, and post-reading language consolidation for The Dover Bronze-Age Boat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
