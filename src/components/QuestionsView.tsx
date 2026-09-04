@@ -204,6 +204,18 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
     setOpenTips((prev) => ({ ...prev, [qId]: !prev[qId] }));
   };
 
+  const getPromptParts = (q: QuestionItem) => {
+    const regex = new RegExp(`\\s*${q.questionNumber}\\s*\\.{2,}\\s*`);
+    const match = q.prompt.match(regex);
+    if (match && match.index !== undefined) {
+      return {
+        prefix: q.prompt.substring(0, match.index).trim(),
+        suffix: q.prompt.substring(match.index + match[0].length).trim(),
+      };
+    }
+    return { prefix: q.prompt, suffix: '' };
+  };
+
   const getWordCount = (str: string) => {
     return str.trim().split(/\s+/).filter(Boolean).length;
   };
@@ -478,6 +490,7 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
                 const isFlagged = flaggedQuestions.has(q.id);
                 const showExplanation = openExplanations[q.id] || (isSubmitted && mode === 'test');
                 const showTip = openTips[q.id];
+                const { prefix, suffix } = getPromptParts(q);
 
                 return (
                   <div key={q.id} className="relative">
@@ -492,27 +505,15 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
                           : 'bg-white border-slate-200 hover:border-slate-300 shadow-xs'
                       }`}
                     >
-                      {/* Card Header: Year Tag, Number, Prompt, and Flag */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start space-x-3 flex-1">
-                          <span className="shrink-0 w-6 h-6 rounded bg-[#0F172A] text-white text-xs font-bold flex items-center justify-center shadow-xs">
-                            {q.questionNumber}
-                          </span>
-                          <div className="flex-1">
-                            {q.year && (
-                              <span className="inline-block px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200 mb-1.5">
-                                Year: {q.year}
-                              </span>
-                            )}
-                            <HighlightableText
-                              text={q.prompt}
-                              questionId={q.id}
-                              highlights={highlights}
-                              onRemoveHighlight={onRemoveHighlight || (() => {})}
-                              className="text-sm font-semibold text-slate-900 leading-snug block"
-                              as="p"
-                            />
-                          </div>
+                      {/* Card Header: Year Tag and Flag */}
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100 mb-3">
+                        <div className="flex items-center gap-2">
+                          {q.year && (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-mono font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                              Year: {q.year}
+                            </span>
+                          )}
+                          <span className="text-[11px] text-slate-500 font-medium">Flow-chart Step {q.questionNumber}</span>
                         </div>
 
                         <div className="flex items-center space-x-1.5">
@@ -529,6 +530,73 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
                             <Flag className="w-3.5 h-3.5 fill-current" />
                           </button>
                         </div>
+                      </div>
+
+                      {/* Prompt & Answer Box next to Question Number */}
+                      <div className="space-y-2">
+                        {prefix && (
+                          <HighlightableText
+                            text={prefix}
+                            questionId={q.id}
+                            highlights={highlights}
+                            onRemoveHighlight={onRemoveHighlight || (() => {})}
+                            className="text-sm font-semibold text-slate-900 leading-snug block"
+                            as="div"
+                          />
+                        )}
+
+                        {/* Answer box placed directly next to question number */}
+                        <div className="flex items-center gap-2.5 my-2">
+                          <label
+                            htmlFor={`input-q-${q.id}`}
+                            title={`Question ${q.questionNumber}`}
+                            className="shrink-0 w-8 h-8 rounded-lg bg-[#0F172A] text-white text-xs font-bold flex items-center justify-center shadow-xs cursor-pointer select-none hover:bg-blue-900 ring-2 ring-slate-200 transition-colors"
+                          >
+                            {q.questionNumber}
+                          </label>
+
+                          <div className="relative flex-1">
+                            <input
+                              id={`input-q-${q.id}`}
+                              type="text"
+                              disabled={isSubmitted && mode === 'test'}
+                              value={answer}
+                              onChange={(e) => onAnswerChange(q.id, e.target.value)}
+                              placeholder="Type ONE word only..."
+                              className={`w-full px-3.5 py-2 text-sm rounded-lg border outline-none transition-all ${
+                                isChecked
+                                  ? isCorrect
+                                    ? 'border-emerald-500 bg-emerald-50/30 text-emerald-950 font-medium ring-2 ring-emerald-200'
+                                    : 'border-rose-500 bg-rose-50/30 text-rose-950 font-medium ring-2 ring-rose-200'
+                                  : 'border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 bg-slate-50/50 hover:bg-white text-slate-900'
+                              }`}
+                            />
+                          </div>
+                        </div>
+
+                        {suffix && (
+                          <HighlightableText
+                            text={suffix}
+                            questionId={q.id}
+                            highlights={highlights}
+                            onRemoveHighlight={onRemoveHighlight || (() => {})}
+                            className="text-sm font-semibold text-slate-900 leading-snug block"
+                            as="div"
+                          />
+                        )}
+                      </div>
+
+                      {/* Word count feedback */}
+                      <div className="flex items-center justify-between text-[11px] mt-2 text-slate-500">
+                        <span>
+                          Word count: <strong className={isOverLimit ? 'text-rose-600 font-bold' : 'text-slate-800'}>{wordCount}</strong> / 1 max (ONE WORD ONLY)
+                        </span>
+                        {isOverLimit && (
+                          <span className="text-rose-600 font-semibold flex items-center space-x-1">
+                            <Info className="w-3 h-3" />
+                            <span>Warning: Exceeds 1-word limit!</span>
+                          </span>
+                        )}
                       </div>
 
                       {/* Question Specific Tip (Practice Mode) */}
@@ -558,40 +626,6 @@ export const QuestionsView: React.FC<QuestionsViewProps> = ({
                           )}
                         </div>
                       )}
-
-                      {/* Input Field */}
-                      <div className="mt-3">
-                        <div className="relative">
-                          <input
-                            id={`input-q-${q.id}`}
-                            type="text"
-                            disabled={isSubmitted && mode === 'test'}
-                            value={answer}
-                            onChange={(e) => onAnswerChange(q.id, e.target.value)}
-                            placeholder="Type ONE word only..."
-                            className={`w-full px-3.5 py-2 text-sm rounded-lg border outline-none transition-all ${
-                              isChecked
-                                ? isCorrect
-                                  ? 'border-emerald-500 bg-emerald-50/30 text-emerald-950 font-medium'
-                                  : 'border-rose-500 bg-rose-50/30 text-rose-950 font-medium'
-                                : 'border-slate-300 focus:border-blue-600 focus:ring-2 focus:ring-blue-100 bg-slate-50/50 hover:bg-white text-slate-900'
-                            }`}
-                          />
-                        </div>
-
-                        {/* Word count feedback */}
-                        <div className="flex items-center justify-between text-[11px] mt-1.5 text-slate-500">
-                          <span>
-                            Word count: <strong className={isOverLimit ? 'text-rose-600 font-bold' : 'text-slate-800'}>{wordCount}</strong> / 1 max (ONE WORD ONLY)
-                          </span>
-                          {isOverLimit && (
-                            <span className="text-rose-600 font-semibold flex items-center space-x-1">
-                              <Info className="w-3 h-3" />
-                              <span>Warning: Exceeds 1-word limit!</span>
-                            </span>
-                          )}
-                        </div>
-                      </div>
 
                       {/* Practice Mode Controls & Feedback */}
                       {mode === 'practice' && (
